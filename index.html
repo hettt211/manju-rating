@@ -75,14 +75,24 @@
 
   var cards = Array.prototype.slice.call(document.querySelectorAll(".card"));
 
+  function selfVote(key){
+    var v = localStorage.getItem(LS + key);
+    return (v === "up" || v === "down") ? v : null;
+  }
+
   function applyCounts(data){
     cards.forEach(function(card){
       var key = card.getAttribute("data-key");
       var d = data[key];
       var up = card.querySelector(".up .n");
       var dn = card.querySelector(".down .n");
-      if (up) up.textContent = (d && d.up) || 0;
-      if (dn) dn.textContent = (d && d.down) || 0;
+      var my = selfVote(key);
+      var sUp = (d && d.up) || 0;
+      var sDown = (d && d.down) || 0;
+      var myUp = my === "up" ? 1 : 0;
+      var myDown = my === "down" ? 1 : 0;
+      if (up) up.textContent = Math.max(sUp, myUp);
+      if (dn) dn.textContent = Math.max(sDown, myDown);
     });
   }
 
@@ -103,24 +113,30 @@
     var upBtn = bar.querySelector(".up"), dnBtn = bar.querySelector(".down");
     var key = card.getAttribute("data-key");
 
-    var voted = localStorage.getItem(LS + key);
+    var voted = selfVote(key);
     if (voted === "up" || voted === "down"){
       upBtn.disabled = true; dnBtn.disabled = true;
       (voted === "up" ? upBtn : dnBtn).classList.add("voted");
+      if (voted === "up") upBtn.querySelector(".n").textContent = "1";
+      else dnBtn.querySelector(".n").textContent = "1";
     }
 
     function vote(action, btn){
       if (upBtn.disabled) return;
+      // 乐观更新：立即变蓝 + 计数 +1，不等待网络
+      upBtn.disabled = true; dnBtn.disabled = true;
+      btn.classList.add("voted");
+      localStorage.setItem(LS + key, action);
+      var n = btn.querySelector(".n");
+      n.textContent = String(parseInt(n.textContent || "0", 10) + 1);
       fetch(VOTE_API + "/api/vote", {
         method: "POST", headers: {"Content-Type": "application/json"},
         body: JSON.stringify({key: key, action: action})
       }).then(function(r){ return r.json(); })
         .then(function(d){
-          upBtn.disabled = true; dnBtn.disabled = true;
-          btn.classList.add("voted");
-          localStorage.setItem(LS + key, action);
-          upBtn.querySelector(".n").textContent = d.up;
-          dnBtn.querySelector(".n").textContent = d.down;
+          var upN = upBtn.querySelector(".n"), dnN = dnBtn.querySelector(".n");
+          upN.textContent = Math.max(d.up || 0, parseInt(upN.textContent, 10));
+          dnN.textContent = Math.max(d.down || 0, parseInt(dnN.textContent, 10));
         }).catch(function(){});
     }
     upBtn.addEventListener("click", function(){ vote("up", upBtn); });
