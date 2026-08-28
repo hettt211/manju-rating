@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>先验评级看板 · 统计汇总</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px; background: #f5f5f7;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 18px; margin: 0 0 4px; color: #1d1d1f; }
+  .sub { font-size: 13px; color: #86868b; margin-bottom: 12px; }
+  .toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+  .toolbar button { padding: 6px 14px; border: 1px solid #e2e2e6; border-radius: 999px;
+    background: #fff; color: #555; font-size: 13px; cursor: pointer; }
+  .toolbar button.active { background: #0071e3; border-color: #0071e3; color: #fff; }
+  .toolbar a { margin-left: auto; font-size: 13px; color: #0071e3; text-decoration: none; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; }
+  th, td { padding: 10px 8px; text-align: left; font-size: 13px; border-bottom: 1px solid #f0f0f2; }
+  th { background: #fafafa; color: #86868b; font-weight: 600; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .rank { color: #86868b; width: 36px; }
+  .badge { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 11px; font-weight: 700; color: #fff; }
+  .badge-S\+ { background: linear-gradient(135deg,#f7c948,#e8a010); }
+  .badge-S { background: linear-gradient(135deg,#ff6b6b,#e03131); }
+  .badge-A { background: linear-gradient(135deg,#4dabf7,#1971c2); }
+  .net-pos { color: #2e7d32; }
+  .net-neg { color: #c62828; }
+  .empty { padding: 30px; text-align: center; color: #86868b; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>先验评级看板 · 统计汇总</h1>
+  <div class="sub">共 218 部 · 数据来自所有访客的点赞/踩，每 15 秒自动刷新</div>
+  <div class="toolbar">
+    <span style="font-size:13px;color:#86868b;">排序：</span>
+    <button data-sort="net" class="active">净赞</button>
+    <button data-sort="up">赞数</button>
+    <button data-sort="down">踩数</button>
+    <a href="index.html">← 返回看板</a>
+  </div>
+  <table>
+    <thead><tr><th class="rank">#</th><th>剧名</th><th>评级</th><th class="num">👍 赞</th><th class="num">👎 踩</th><th class="num">净赞</th></tr></thead>
+    <tbody id="tbody"><tr><td colspan="6" class="empty">加载中…</td></tr></tbody>
+  </table>
+</div>
+<script>
+(function(){
+  var VOTE_API = "https://manju-vote.hettt211.workers.dev";
+  var ITEMS = [{"k": "GKwRIDoOXIoWACAAAATJmAoH.jpg", "n": "1970渔神：大海听我号令", "r": "A"}, {"k": "GAqhRAAOXIoWABVgEQTJmAmC.jpg", "n": "1985，姑姑驾到", "r": "A"}, {"k": "GKwRIaIOUyPxAEH8bQTGDrIE.jpg", "n": "80年代纺织厂女工", "r": "S+"}, {"k": "GAqhQKIOXIolACn5mATJmBrj.jpg", "n": "一九八零，寻亲归途", "r": "S"}, {"k": "GKwRIJEOXIqMABndlwTJmIMH.jpg", "n": "一声兄弟，一生情", "r": "A"}, {"k": "GAqhuykOXIqVACA1uATJmIsI.jpg", "n": "一念清醒万山开", "r": "S"}, {"k": "GKwRIW4OXIojADLKYgTJmBiZ.jpg", "n": "一时欢喜一时分离", "r": "S"}, {"k": "GAqhQKIOXIqVABPbCwTJmItx.jpg", "n": "一枪镇四海", "r": "A"}, {"k": "GAqhQKIOXIqOAAxOzATJmIRI.jpg", "n": "一纸契约龙婿护妻", "r": "A"}, {"k": "GKwRIJIOXIqMACpHCQTJmIMR.jpg", "n": "一诗惊秋宴，布衣入青云", "r": "A"}, {"k": "GAqhJLsOXIojAA_vhwTJmBfx.jpg", "n": "一身铁锈半生暖", "r": "A"}, {"k": "GAqhRAAOXIohAA372ATJmBYG.jpg", "n": "万族相亲：开局牵手深渊女皇", "r": "S"}, {"k": "GAqhT9EOXIofACSKeATJmBQq.jpg", "n": "三十赴青山，人生再启程", "r": "A"}, {"k": "GKwRIJIOXIogACc3wwTJmBSM.jpg", "n": "三宝辣妻宠上天", "r": "S"}, {"k": "GAqhuGoOUyRfACIo6QTGDvuP.jpg", "n": "与堂哥散伙后，我开鲜肉店逆袭", "r": "S"}, {"k": "GKwRIMAOXIodAA4ndgTJmBFu.jpg", "n": "两界送外卖，我在古代赚翻了", "r": "A"}, {"k": "GAqhuykOXIp6AB6VQATJmHQv.jpg", "n": "九千账款，断了二十年竹马情", "r": "A"}, {"k": "GAqhRAAOUyRUABZ7rgTGDvNf.jpg", "n": "九百万拆迁款见人心", "r": "S"}, {"k": "GAqhJLsOXIocADzUywTJmA9W.jpg", "n": "二婚也风光", "r": "A"}, {"k": "GAqhcW4OXIqNAAl7_wTJmIPo.jpg", "n": "五年赘婿离城", "r": "A"}, {"k": "GKwRIUEOXIohABw8BQTJmBXe.jpg", "n": "亲情这本账", "r": "A"}, {"k": "GKwRIaIOXIqAAB1LYwTJmHkc.jpg", "n": "人生下半程，碎花又逢春", "r": "A"}, {"k": "GKwRIRwOXIqAACTjagTJmHkK.jpg", "n": "人间皆是痕", "r": "A"}, {"k": "GKwRIJIOXIodABzi1ATJmBGt.jpg", "n": "今天送你一张酱香饼，三年后投我一张选举票", "r": "A"}, {"k": "GAqhT9EOXIoYABXFVATJmAt0.jpg", "n": "从地摊到连锁，我与兄长和解", "r": "A"}, {"k": "GKwRIDoOXIplAB1bjgTJmGKR.jpg", "n": "从此不候", "r": "S"}, {"k": "GKwRIRwOXIplAB1bjgTJmGKx.jpg", "n": "从此以后，我保护你", "r": "S"}, {"k": "GKwRIUEOXIoYACt3DgTJmAui.jpg", "n": "从鹅场开始的逆袭", "r": "A"}, {"k": "GKwRIMAOXIqHABT8WwTJmH9d.jpg", "n": "他是我的亲生儿子", "r": "S+"}, {"k": "GKwRIJEOXIqHABOfIQTJmH8E.jpg", "n": "他错宠假千金，将我关进精神病院", "r": "A"}, {"k": "GAqhuykOXIqAADSAZwTJmHjT.jpg", "n": "你若无情我便休", "r": "A"}, {"k": "GAqhcW4OXIp_AAxJfgTJmHio.jpg", "n": "你要装阔，我不买单", "r": "A"}, {"k": "GKwRIUEOXIoeABDX5gTJmBKM.jpg", "n": "倔强新妇", "r": "A"}, {"k": "GAqhuGoOXIoZACCsrgTJmAzJ.jpg", "n": "傅太太她不好惹", "r": "S"}, {"k": "GKwRIUEOXIpzABUtXwTJmG2J.jpg", "n": "儿子全市第一，婆婆给我两百块办谢师宴", "r": "A"}, {"k": "GKwRIJEOXIofAByskgTJmBOa.jpg", "n": "全家靠读心小奶团稳赢", "r": "A"}, {"k": "GAqhRAAOXIqAACTLAATJmHi3.jpg", "n": "全村饥荒：反派继母带全家顿顿吃肉", "r": "A"}, {"k": "GKwRIUEOUyRWAC2kJATGDvRP.jpg", "n": "八零，杀猪辣媳宠上天", "r": "S"}, {"k": "GAqhQKIOXIolACVxIATJmBpZ.jpg", "n": "养龙奇事", "r": "A"}, {"k": "GAqh9TMOXIohADHTnwTJmBY9.jpg", "n": "兽语神医：探花夫君别装了", "r": "A"}, {"k": "GAqh9TMOXIokACXiggTJmBoK.jpg", "n": "再婚媳妇不好惹", "r": "A"}, {"k": "GKwRIW4OXIoVABdsewTJmAkx.jpg", "n": "再见我的双标妻", "r": "S+"}, {"k": "GAqhuykOUyRTABZoBQTGDvJB.jpg", "n": "冒牌财神", "r": "A"}, {"k": "GAqhQKIOXIp6ABJxWgTJmHPr.jpg", "n": "净身出户我收回前夫百亿订单", "r": "A"}, {"k": "GKwRIaIOXIphADDKzQTJmGAm.jpg", "n": "分家只给废果园，我靠聚宝盆成为水果大亨", "r": "S"}, {"k": "GAqhJLsOXIphACGPeQTJmGAY.jpg", "n": "分家只给枯井？我挖出灵泉", "r": "A"}, {"k": "GAqhuykOXIpgADVycwTJmF8C.jpg", "n": "分红归零，请叫我陆总", "r": "A"}, {"k": "GKwRIJIOXIpVAB1bjgTJmFbC.jpg", "n": "别动我的房子", "r": "S"}, {"k": "GAqhuGoOUyRcACkFKATGDvls.jpg", "n": "别惹我，我靠许愿平天下", "r": "A"}, {"k": "GAqhJLsOXIp4AA_63ATJmHIS.jpg", "n": "剑光向日金鳞开", "r": "A"}, {"k": "GAqhuGoOXIofACU_eATJmBMs.jpg", "n": "十八载错养状元", "r": "A"}, {"k": "GKwRIRwOXIqEACAAAATJmHwv.jpg", "n": "千万拆迁款到账后，我看清了枕边人", "r": "S+"}, {"k": "GAqhuGoOXIogAAxShATJmBU2.jpg", "n": "千里有归处", "r": "A"}, {"k": "GKwRIW4OXIohADqKiwTJmBXn.jpg", "n": "升学宴上一屉馒头", "r": "A"}, {"k": "GKwRIJIOXIoQAC3LBQTJmAVh.jpg", "n": "半路夫妻福满堂", "r": "A"}, {"k": "GKwRIaIOXIofAAqMswTJmBNB.jpg", "n": "南城旧爱", "r": "A"}, {"k": "GKwRIDoOXIodAAtZNATJmBEW.jpg", "n": "厉总的私宠小娇妻", "r": "S"}, {"k": "GAqhJLsOXIoQAB8oIQTJmAUu.jpg", "n": "厨神的孙子", "r": "A"}, {"k": "GAqhuGoOXIohABMvcATJmBYz.jpg", "n": "双嫁：一心捞钱的我们被拿下了", "r": "S"}, {"k": "GAqhy90OXIobAAkLIQTJmA8a.jpg", "n": "反虐白眼狼", "r": "S+"}, {"k": "GAqhuGoOUyRYAA4rMQTGDvXc.jpg", "n": "史上最狂上门女婿", "r": "A"}, {"k": "GAqhy90OXIpvACXR_QTJmGo0.jpg", "n": "吊打奇葩弟媳", "r": "A"}, {"k": "GKwRIDoOXIocABNN3gTJmA-O.jpg", "n": "名酒炒菜，老公真能装", "r": "A"}, {"k": "GAqhuykOXIogADpREATJmBT4.jpg", "n": "商战未眠夜", "r": "A"}, {"k": "GAqhuykOUyPvABr0bQTGDrB0.jpg", "n": "回村收蟹，带全村致富", "r": "A"}, {"k": "GAqhuGoOXIptABQTXgTJmGkM.jpg", "n": "地下室的秘密", "r": "A"}, {"k": "GAqhJLsOR2l7AB7b2QTB3-nI.jpg", "n": "垛下姻缘", "r": "S"}, {"k": "GAqhQKIOXIqUAA6anATJmInL.jpg", "n": "夜市遇见陈先生", "r": "A"}, {"k": "GAqhuGoOXIqKACei8gTJmIFI.jpg", "n": "天价罚单，面包车超速360码", "r": "S"}, {"k": "GAqhy90OXIqKABZ6BATJmIHX.jpg", "n": "天庭KPI：三神扶我上青云", "r": "A"}, {"k": "GAqhT9EOXIoiABupqgTJmBd2.jpg", "n": "天才少年定乾坤", "r": "A"}, {"k": "GKwRIW4OXIoiAAqwGgTJmBeR.jpg", "n": "天赐金瞳，药王逆袭", "r": "A"}, {"k": "GKwRIJEOXIoiACbhjATJmBe1.jpg", "n": "天降锦鲤旺全家", "r": "A"}, {"k": "GAqhJLsOXIplABF7DQTJmGLn.jpg", "n": "夫人快救驾，总有刁民想害朕", "r": "A"}, {"k": "GAqhQKIOXIofABOoWATJmBQZ.jpg", "n": "女儿的归途", "r": "S+"}, {"k": "GKwRIDoOXIoiAC6y7ATJmBcC.jpg", "n": "她把日子过成春天", "r": "A"}, {"k": "GKwRIUEOXIp7AA0ncwTJmHUj.jpg", "n": "妈妈的反渣攻略", "r": "S"}, {"k": "GAqhJLsOXIoeAB95VgTJmBIw.jpg", "n": "妈妈的小救星", "r": "S+"}, {"k": "GKwRIJEOUyRdAES1wgTGDvn_.jpg", "n": "妙手神医穿冷宫", "r": "S"}, {"k": "GAqhcW4OXIpqABEu0QTJmGZ7.jpg", "n": "姑姑嫌哥贫，哪知我掌全局", "r": "S"}, {"k": "GAqhT9EOXIofADfHcgTJmBO1.jpg", "n": "娶错媳妇嫁对郎", "r": "A"}, {"k": "GAqhT9EOUyRQACMy_wTGDvAY.jpg", "n": "婆婆的遗产是把旧锅铲", "r": "S"}, {"k": "GAqhT9EOUyRSAEM0XgTGDvFx.jpg", "n": "婚局迷雾AI真人版", "r": "A"}, {"k": "GKwRIW4OUyRKACAAAATGDuyP.jpg", "n": "孟婆是只猫", "r": "S"}, {"k": "GKwRIJEOXIohAB3bhATJmBX8.jpg", "n": "守住初心，护我小家", "r": "A"}, {"k": "GAqh6-4OUyRUADio9QTGDvNP.jpg", "n": "守宅人", "r": "A"}, {"k": "GKwRIW4OXIomABd5EgTJmBuG.jpg", "n": "宗门独宠小师弟？我连夜提桶跑路", "r": "S+"}, {"k": "GAqhJLsOXIoPAAr8owTJmATG.jpg", "n": "宝贝不哭，后妈照顾你", "r": "A"}, {"k": "GAqhQKIOUyRKAEe0bwTGDuyW.jpg", "n": "实习月老：专治渣男贱女", "r": "S+"}, {"k": "GAqhuGoOXIocAAv-rQTJmBCI.jpg", "n": "家门惊变", "r": "A"}, {"k": "GAqhy90OXIoZAC2LcQTJmAzx.jpg", "n": "富贵门前皆孝子", "r": "S+"}, {"k": "GKwRIJEOXIodABMHeATJmBFx.jpg", "n": "将军扛水泥养大军", "r": "A"}, {"k": "GAqhJLsOXIodAA2ICgTJmBFw.jpg", "n": "将军扛水泥养大军第二季", "r": "S"}, {"k": "GAqhuykOXIogACXaIwTJmBR3.jpg", "n": "山君：岭上狂猎", "r": "A"}, {"k": "GAqh6-4OXIoiAB8dQATJmBa5.jpg", "n": "岁月缝花", "r": "S"}, {"k": "GAqhT9EOXIpuAB-IygTJmGmN.jpg", "n": "帝王蟹", "r": "A"}, {"k": "GKwRIMAOXIoaACdWngTJmA2w.jpg", "n": "带国宝回家", "r": "A"}, {"k": "GAqhQKIOXIpqAB1bjgTJmGZc.jpg", "n": "带白月光归家后，妻子悔疯了", "r": "S"}, {"k": "GAqhRAAOXIoaACAAAATJmA3-.jpg", "n": "广场舞大妈遭遇道具师", "r": "S"}, {"k": "GKwRIDoOXIoeACJg2gTJmBLw.jpg", "n": "开局撞上美女总裁", "r": "A"}, {"k": "GKwRIRwOXIpuAB1bjgTJmGl3.jpg", "n": "弟弟班主任居然是我初恋", "r": "S"}, {"k": "GKwRIDoOXIoaABRLhQTJmA5B.jpg", "n": "归途见灯明", "r": "A"}, {"k": "GAqhQKIOXIprAB1bjgTJmGdX.jpg", "n": "当年荒滩蒙难，如今千亿报恩", "r": "A"}, {"k": "GAqhy90OUyRfADrqRQTGDvun.jpg", "n": "彪悍人生，从制霸高原开始", "r": "S"}, {"k": "GKwRIUEOUyPrADEN1gTGDq19.jpg", "n": "恐龙复苏：我靠溶洞躲末日", "r": "S"}, {"k": "GAqh6-4OXIogABNxtgTJmBTs.jpg", "n": "恰如死去的白月光", "r": "A"}, {"k": "GAqhuGoOXIpxACr3cgTJmGt0.jpg", "n": "悍妻燕娘，侯府软蛋我来扶", "r": "A"}, {"k": "GKwRIJIOXIqLAEg4QgTJmIIn.jpg", "n": "我以为嫁人是靠岸，后来才学会自己掌舵", "r": "A"}, {"k": "GAqhuykOXIohAA6GUATJmBXS.jpg", "n": "我在修真界卖菜刀", "r": "S"}, {"k": "GAqhuykOUyPwABIOTwTGDrE4.jpg", "n": "我把白酒换成矿泉水，女友破防了", "r": "A"}, {"k": "GKwRIW4OXIohACSoEQTJmBan.jpg", "n": "我本豪门", "r": "S"}, {"k": "GKwRIMAOXIoiABDEiATJmBdH.jpg", "n": "我的体内有条龙", "r": "A"}, {"k": "GKwRIW4OXIoiADByEwTJmBch.jpg", "n": "我的外卖五十万", "r": "A"}, {"k": "GKwRIUEOR2l7AAEP4ATB3-mZ.jpg", "n": "我的饭馆通北宋", "r": "S"}, {"k": "GKwRIJIOXIqJAB4-dATJmICT.jpg", "n": "我靠一碗胡辣汤，干翻米其林", "r": "A"}, {"k": "GAqhQKIOXIqGACkqBQTJmH5N.jpg", "n": "我，天字第一纨绔，扛AK撩女帝", "r": "A"}, {"k": "GAqh9TMOXIoVAAz6zATJmAkc.jpg", "n": "承舟赴禾岸", "r": "A"}, {"k": "GKwRIDoOXIpQAEic_gTJmFON.jpg", "n": "报恩神鼠", "r": "S"}, {"k": "GAqhJLsOXIoWADdsMQTJmAnK.jpg", "n": "插翅难逃", "r": "A"}, {"k": "GAqh6-4OXIoaAAodlQTJmA2Q.jpg", "n": "故梦不负归来人第一季", "r": "A"}, {"k": "GKwRIRwOXIpxAB7qgATJmGsV.jpg", "n": "斗黑", "r": "A"}, {"k": "GAqhJLsOXIp7ABTAcwTJmHTM.jpg", "n": "旧厂知意", "r": "A"}, {"k": "GKwRIaIOXIp7ACdyxQTJmHTh.jpg", "n": "旧爱难哄：贺医生请自重", "r": "S"}, {"k": "GAqhT9EOXIpjABPitATJmGFT.jpg", "n": "春风不识旧时月", "r": "S"}, {"k": "GKwRIJEOUyRRACLiawTGDvDV.jpg", "n": "暖婚后归宠", "r": "S"}, {"k": "GAqhuykOXIoPAAn6jQTJmASe.jpg", "n": "暴雨将至，我决定不等了", "r": "A"}, {"k": "GAqh9TMOXIqJAAbi5QTJmIDe.jpg", "n": "替身女配拿稳白月光剧本", "r": "S+"}, {"k": "GKwRIaIOXIshAAnDPgTJmRGx.jpg", "n": "最美尼姑让皇上失控", "r": "A"}, {"k": "GKwRIW4OXIokADUgQwTJmBoJ.jpg", "n": "月满春来", "r": "S"}, {"k": "GAqhJLsOUyPsABeBjQTGDq3A.jpg", "n": "末日寒潮我有移动堡垒我怕谁", "r": "S"}, {"k": "GAqhcW4OXIoVACNNKQTJmAk7.jpg", "n": "柴米油盐皆温柔", "r": "A"}, {"k": "GAqhuykOXIohACEWCwTJmBZv.jpg", "n": "水底奇遇", "r": "A"}, {"k": "GAqh9TMOXIpcABvnPwTJmFq-.jpg", "n": "沉冤八年,校门口保安是卧底英雄", "r": "A"}, {"k": "GAqh6-4OXIp9AB1bjgTJmHZy.jpg", "n": "没钱后，亲生父母和养姐恼羞成怒", "r": "S+"}, {"k": "GKwRIJIOXIobACLAXgTJmA6w.jpg", "n": "海棠烬处有月光", "r": "A"}, {"k": "GAqhy90OXIobACAAAATJmA7f.jpg", "n": "海鲜鉴人心", "r": "A"}, {"k": "GKwRIW4OXIofAAiV8ATJmBM4.jpg", "n": "清如初见梦思年", "r": "S"}, {"k": "GAqhuGoOXIp_ACAAAATJmHip.jpg", "n": "清晨的决裂之母性觉醒", "r": "S"}, {"k": "GAqhy90OUyRXAD5dggTGDvUC.jpg", "n": "渔夫遭恶意涨租，自购大船闯海逆袭", "r": "A"}, {"k": "GAqhQKIOXIohACTkIQTJmBYP.jpg", "n": "温柔有刃", "r": "A"}, {"k": "GAqhRAAOXIoeABHIBQTJmBKC.jpg", "n": "满级师妹太苟了", "r": "A"}, {"k": "GAqhQKIOXIoWACykjgTJmAm_.jpg", "n": "潮声里的承诺", "r": "A"}, {"k": "GAqhuGoOXIolADPKQATJmBoe.jpg", "n": "烟火里的暖婚", "r": "A"}, {"k": "GAqh9TMOUyRYAA3gHwTGDvYu.jpg", "n": "爆单", "r": "S"}, {"k": "GAqhuykOXIpeAC9CogTJmFxv.jpg", "n": "爱在星光灿烂时", "r": "S"}, {"k": "GAqhQKIOXIoWABA96gTJmAmB.jpg", "n": "爱尽，自有归途", "r": "S"}, {"k": "GKwRIDoOXIokADfPRATJmBnv.jpg", "n": "玉兰误", "r": "A"}, {"k": "GAqhuGoOXIojADOi5QTJmBf-.jpg", "n": "田园巧妻", "r": "A"}, {"k": "GAqhcW4OR2RJACD7TwTB3RpJ.jpg", "n": "留住的客人", "r": "S"}, {"k": "GAqhuykOXIoQABsAqATJmAVB.jpg", "n": "白月光落尘", "r": "A"}, {"k": "GKwRIMAOXIoQADMCYgTJmAV3.jpg", "n": "白牛报恩，贫农开荒成粮王", "r": "A"}, {"k": "GAqhuykOXIoZACAFiwTJmAzl.jpg", "n": "盖头下的真相", "r": "A"}, {"k": "GAqh9TMOXIoeACNCogTJmBJT.jpg", "n": "盲眼丞相：断天下", "r": "A"}, {"k": "GKwRIW4OXIp8ACf67QTJmHZI.jpg", "n": "盲眼御兽师：我的灵宠全是上古神", "r": "S"}, {"k": "GAqh9TMOXIokADFZXwTJmBk3.jpg", "n": "相亲认错人", "r": "A"}, {"k": "GAqhy90OXIokACwcggTJmBkV.jpg", "n": "相逢已是上上签", "r": "S"}, {"k": "GKwRIJEOXIolABEfCQTJmBqc.jpg", "n": "真君凡间镇山录", "r": "A"}, {"k": "GKwRIUEOXIodACFWHgTJmBDl.jpg", "n": "离婚后，女总裁拉着我领证", "r": "S+"}, {"k": "GAqhT9EOUyRUACYOGATGDvME.jpg", "n": "离婚后，我与苏大小姐闪婚了", "r": "S+"}, {"k": "GKwRIRwOXIp3AByuxwTJmHE1.jpg", "n": "离婚后，我成了集团掌权人", "r": "A"}, {"k": "GAqhQKIOUyRjAAvrcATGDv4H.jpg", "n": "穿古开小店，奶茶变仙浆", "r": "S+"}, {"k": "GKwRIaIOXIoXAD8jQQTJmArC.jpg", "n": "穿越成古代农家子，我靠造纸逆袭人生", "r": "A"}, {"k": "GAqhuykOUyRjAA3gGgTGDv4M.jpg", "n": "穿进自己写的仙侠文，废柴弟子逆袭成师娘", "r": "A"}, {"k": "GAqhuykOXIoXAA-DxATJmArb.jpg", "n": "纯纯欲动", "r": "A"}, {"k": "GKwRIDoOXIp0AC-42gTJmG59.jpg", "n": "翻身从被踢出局开始", "r": "S"}, {"k": "GKwRIaIOXIodAEHdDwTJmBD4.jpg", "n": "老婆别哭，我真不想和你离婚啊", "r": "S"}, {"k": "GAqhT9EOUyROACP5ewTGDu8N.jpg", "n": "老村西山秘闻", "r": "A"}, {"k": "GKwRIJIOXIocACb6CwTJmBBp.jpg", "n": "老雷家翻身：从邻居家楼塌了开始", "r": "A"}, {"k": "GAqhRAAOXIqMABlMiQTJmINx.jpg", "n": "致命的诱惑", "r": "A"}, {"k": "GKwRIUEOXIocAEsjDATJmBCA.jpg", "n": "苦尽麦香来", "r": "A"}, {"k": "GAqhcW4OUyRYAAthiQTGDvXS.jpg", "n": "荒年：神龙助我成神", "r": "S"}, {"k": "GAqhJLsOXIp9AB1bjgTJmHbv.jpg", "n": "萌宝老祖2，庶嫡之争", "r": "S"}, {"k": "GKwRIW4OXIp9AB-qUQTJmHcC.jpg", "n": "蒙眼望断江南雪", "r": "S+"}, {"k": "GAqhuykOUyRbAAjuqgTGDvgx.jpg", "n": "蝗灾饥荒年: 鼠爷报恩", "r": "A"}, {"k": "GAqh9TMOXIqSADlKVwTJmIfn.jpg", "n": "袁欣的爱情进化论", "r": "A"}, {"k": "GAqhT9EOXIoPABHMhATJmAUF.jpg", "n": "被扫地出门后，我成了鉴宝天花板", "r": "A"}, {"k": "GAqhy90OUyRjAA5XSgTGDv4N.jpg", "n": "被推下水后，长公主摄政天下", "r": "A"}, {"k": "GKwRIW4OXIpuABtmKgTJmGl5.jpg", "n": "规则怪谈：我能听到万物的心声", "r": "S"}, {"k": "GKwRIMAOUyReAEQY1QTGDvrG.jpg", "n": "觉醒后我一步登天", "r": "A"}, {"k": "GKwRIUEOXIpwADLF0QTJmGqE.jpg", "n": "订婚宴撕破脸，我靠粉条麻花坐拥大厂", "r": "A"}, {"k": "GKwRIUEOXIohAA4ZYgTJmBZT.jpg", "n": "说我机甲残废，我单手捏爆苍穹", "r": "A"}, {"k": "GKwRIDoOXIogADv-ZATJmBVg.jpg", "n": "谁的三杯鸡", "r": "A"}, {"k": "GAqhQKIOXIphAB1bjgTJmGAb.jpg", "n": "谎言添金计划", "r": "A"}, {"k": "GAqh9TMOXIocAEHf5wTJmBBU.jpg", "n": "辣妈福宝", "r": "A"}, {"k": "GAqhuGoOXIobACJ3XATJmA6X.jpg", "n": "过往不念，余生向阳", "r": "A"}, {"k": "GKwRIRwOXIolACIiZgTJmBq1.jpg", "n": "这个媳妇有点辣", "r": "A"}, {"k": "GKwRIJIOXIqWACAAAATJmIxl.jpg", "n": "这时对那时错（上）", "r": "A"}, {"k": "GAqhcW4OXIqFABJD9wTJmH0k.jpg", "n": "退休之后我称王", "r": "A"}, {"k": "GKwRIW4OXIqAAAyBugTJmHkO.jpg", "n": "逆袭归来，前妻破防了", "r": "S"}, {"k": "GAqhuykOXIofACgl5gTJmBOV.jpg", "n": "那一年麦子黄了", "r": "A"}, {"k": "GKwRIRwOXIqWACWKfgTJmIyG.jpg", "n": "重回1985：我靠臭下水护妻翻身", "r": "A"}, {"k": "GAqh9TMOXIolACBRvQTJmBsF.jpg", "n": "重回大学，我有一个亿", "r": "S"}, {"k": "GKwRIDoOXIsgAChVlgTJmRFx.jpg", "n": "重掌旧局，斩尽恩怨两相清", "r": "A"}, {"k": "GAqhRAAOXIoUAAl-VgTJmAg7.jpg", "n": "重生1987：我开始野性狩猎", "r": "A"}, {"k": "GKwRIUEOXIqWACFX5wTJmI03.jpg", "n": "重生80年代又嫁给了前世老公", "r": "A"}, {"k": "GKwRIMAOXIqXADs88wTJmI2y.jpg", "n": "重生93开局就分家", "r": "A"}, {"k": "GAqhT9EOXIolAAhUWwTJmBsq.jpg", "n": "重生之我要拿回一切", "r": "A"}, {"k": "GAqhQKIOXIolAA8YGATJmBr8.jpg", "n": "重生大东北：靠打猎带四个丫头享福吃饱", "r": "A"}, {"k": "GAqhJLsOXIolAEQEpwTJmBsm.jpg", "n": "重生当反派，我养出万古女魔尊", "r": "A"}, {"k": "GKwRIW4OUyRWACtK6QTGDvSO.jpg", "n": "重生枭雄，痛改前非护贤妻", "r": "A"}, {"k": "GAqhT9EOXIolAB8laATJmBoY.jpg", "n": "野鸭子的白日梦", "r": "A"}, {"k": "GKwRIRwOXIokADRc7gTJmBlJ.jpg", "n": "银发保镖", "r": "S"}, {"k": "GAqhRAAOXIqPACORuQTJmIWP.jpg", "n": "银蛇报恩", "r": "S"}, {"k": "GAqhy90OXIoeAER2nATJmBJj.jpg", "n": "锦色风华", "r": "S"}, {"k": "GAqhJLsOUyPuAC0WewTGDq_Z.jpg", "n": "镖客江湖之大漠行者", "r": "A"}, {"k": "GAqhT9EOXIqCAA0ZDgTJmHns.jpg", "n": "闪婚契约：捡个老公是总裁", "r": "A"}, {"k": "GKwRIJEOXIocACAAAATJmA_Y.jpg", "n": "阀门焊死，乡情两断AI真人版", "r": "A"}, {"k": "GKwRIW4OXIoeAAwzNQTJmBH1.jpg", "n": "陆夫人，您的马甲又掉了！", "r": "S"}, {"k": "GAqhuGoOXIokADsKfATJmBoF.jpg", "n": "雪夜逆旅，吃喝不愁", "r": "A"}, {"k": "GKwRIJEOXIpkAB1bjgTJmGHU.jpg", "n": "风云再起，从掌公主归来开始", "r": "S"}, {"k": "GAqh6-4OXIqGABmrfATJmH3e.jpg", "n": "首席总监的摆摊逆袭路", "r": "A"}, {"k": "GAqhRAAOUyRZABhITQTGDvZ3.jpg", "n": "驾校教练", "r": "A"}, {"k": "GKwRIaIOXIp6ABskrgTJmHP5.jpg", "n": "龙睫茶山", "r": "A"}, {"k": "GAqhcW4OXIp6ABUD7gTJmHQB.jpg", "n": "龙睫茶山第三季", "r": "S"}, {"k": "GAqhcW4OXIp6ABd1VATJmHP7.jpg", "n": "龙睫茶山第二季", "r": "A"}, {"k": "GAqh9TMOXIp6ADtO6ATJmHRP.jpg", "n": "龙睫茶山第四季", "r": "S"}, {"k": "GAqh6-4OUyRbAAg2hwTGDvii.jpg", "n": "龙隐十八年", "r": "A"}, {"k": "GAqhRAAOXIp6AB1bjgTJmHPZ.jpg", "n": "龙首腾云", "r": "S"}];
+  var DATA = {};
+  var SORT = "net";
+
+  function net(d){ return (d.up||0) - (d.down||0); }
+
+  function render(){
+    var tbody = document.getElementById("tbody");
+    if(!Object.keys(DATA).length){
+      tbody.innerHTML = '<tr><td colspan="6" class="empty">暂无数据</td></tr>';
+      return;
+    }
+    var arr = ITEMS.map(function(it){
+      var d = DATA[it.k] || {up:0, down:0};
+      return {n: it.n, r: it.r, up: d.up||0, down: d.down||0, net: net(d)};
+    });
+    arr.sort(function(a, b){
+      if(SORT === "up") return b.up - a.up;
+      if(SORT === "down") return b.down - a.down;
+      return b.net - a.net;
+    });
+    tbody.innerHTML = arr.map(function(x, i){
+      var cls = "badge badge-" + x.r.replace("+", "\+");
+      var netCls = x.net > 0 ? "net-pos" : (x.net < 0 ? "net-neg" : "");
+      return '<tr><td class="rank">' + (i+1) + '</td>' +
+        '<td>' + x.n + '</td>' +
+        '<td><span class="' + cls + '">' + x.r + '</span></td>' +
+        '<td class="num">' + x.up + '</td>' +
+        '<td class="num">' + x.down + '</td>' +
+        '<td class="num ' + netCls + '">' + (x.net > 0 ? "+" : "") + x.net + '</td></tr>';
+    }).join("");
+  }
+
+  function refresh(){
+    fetch(VOTE_API + "/api/vote/all").then(function(r){ return r.json(); })
+      .then(function(d){ DATA = d; render(); }).catch(function(){});
+  }
+
+  document.querySelectorAll(".toolbar button").forEach(function(b){
+    b.addEventListener("click", function(){
+      SORT = b.getAttribute("data-sort");
+      document.querySelectorAll(".toolbar button").forEach(function(x){ x.classList.remove("active"); });
+      b.classList.add("active");
+      render();
+    });
+  });
+
+  refresh();
+  setInterval(refresh, 15000);
+})();
+</script>
+</body>
+</html>
